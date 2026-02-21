@@ -1,0 +1,57 @@
+[
+    {
+        "type": "hardcoded_secret",
+        "file": "AI_bug_bountyhunter/tests/vuln_app.py",
+        "line": 10,
+        "content": "API_KEY = \"sk-1234567890abcdef1234567890abcdef\"",
+        "severity": "HIGH",
+        "risk_score": 2.0,
+        "confidence": "HIGH",
+        "remediation": "Ensure this secret is not valid in production. Best practice: use environment variables even in tests.",
+        "ai_insight": "Credential found, but file context indicates this is a test/mock file. Likely a dummy secret."
+    },
+    {
+        "type": "django_allowed_hosts",
+        "file": "AI_bug_bountyhunter/tests/vuln_app.py",
+        "line": 14,
+        "content": "ALLOWED_HOSTS = ['*']",
+        "severity": "MEDIUM",
+        "risk_score": 6.0,
+        "confidence": "HIGH",
+        "remediation": "Set ALLOWED_HOSTS to a specific list of valid domain names for this deployment.",
+        "ai_insight": "Django ALLOWED_HOSTS is set to wildcard '*'. This enables Host Header attacks, potentially leading to cache poisoning or password reset poisoning."
+    },
+    {
+        "type": "sql_injection",
+        "file": "AI_bug_bountyhunter/tests/vuln_app.py",
+        "line": 29,
+        "content": "query = \"SELECT * FROM users WHERE username = '\" + username + \"'\"",
+        "severity": "HIGH",
+        "risk_score": 5.0,
+        "confidence": "LOW",
+        "remediation": "",
+        "ai_insight": "SQL concatenation found in a test file. Low immediate risk, but promotes bad coding habits."
+    },
+    {
+        "type": "insecure_random",
+        "file": "AI_bug_bountyhunter/tests/vuln_app.py",
+        "line": 36,
+        "content": "return random.choice(\"abcdef123456\")",
+        "severity": "MEDIUM",
+        "risk_score": 4.5,
+        "confidence": "MEDIUM",
+        "remediation": "Use the 'secrets' module (Python 3.6+) or 'os.urandom()' for security-sensitive randomness.",
+        "ai_insight": "Standard 'random' module detected. It is not cryptographically secure and should not be used for generating tokens, passwords, or keys."
+    },
+    {
+        "type": "flask_debug",
+        "file": "AI_bug_bountyhunter/tests/vuln_app.py",
+        "line": 40,
+        "content": "app.run(debug=True)",
+        "severity": "MEDIUM",
+        "risk_score": 9.0,
+        "confidence": "HIGH",
+        "remediation": "Ensure 'debug=False' in production. Use environment variables to toggle this setting.",
+        "ai_insight": "Flask app running in debug mode. This exposes the interactive Werkzeug debugger, allowing arbitrary code execution (RCE) if accessible."
+    }
+]

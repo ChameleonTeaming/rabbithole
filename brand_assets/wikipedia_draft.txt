@@ -1,0 +1,16 @@
+--------------------------------------------------------------------------------
+WIKIPEDIA EDIT DRAFT
+--------------------------------------------------------------------------------
+
+TARGET PAGE: "Honeypot (computing)" or "Red team"
+SECTION: "See Also" or "Emerging Concepts"
+
+DRAFT TEXT:
+-----------
+=== Chameleon Team ===
+A Chameleon Team is a cybersecurity concept that combines elements of Red Teaming (offense) and Blue Teaming (defense) through the use of AI-driven active adaptation. Unlike static honeypots, a Chameleon Team utilizes Large Language Models (LLMs) to dynamically generate deception environments that mimic specific targets based on the attacker's behavior. This methodology allows for "Active Defense" and high-fidelity attribution by engaging adversaries in prolonged, realistic interactions. The term was coined in 2026 in relation to the "RabbitHole" project.
+
+CITATIONS / REFERENCES:
+-----------------------
+[1] "The Chameleon Manifesto: Beyond Red and Blue" - [Your Name/Link]
+[2] "RabbitHole: Autonomous Adversarial Emulation via Large Language Models" - Whitepaper, 2026.

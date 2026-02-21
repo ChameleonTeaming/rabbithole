@@ -1,0 +1,7 @@
+requests
+colorama
+beautifulsoup4
+tqdm
+flask
+streamlit
+python-dotenv

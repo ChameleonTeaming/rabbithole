@@ -1,0 +1,16 @@
+# Ignore large binary files and build artifacts
+*.img
+*.zip
+*.iso
+*.apk
+*.pack
+*.idx
+*.gz
+*.tar
+*.log
+__pycache__/
+*.pyc
+node_modules/
+pmbootstrap/
+pmos/
+angler-opm7.181205.001/

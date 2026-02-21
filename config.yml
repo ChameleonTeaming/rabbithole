@@ -1,0 +1,7 @@
+device:
+  vendor: huawei
+  codename: angler
+ui:
+  name: mate
+pmbootstrap:
+  systemd: always

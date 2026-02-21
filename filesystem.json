@@ -1,0 +1,27 @@
+{
+    "bin": {
+        "ls": "file",
+        "cp": "file",
+        "mv": "file"
+    },
+    "etc": {
+        "passwd": "file",
+        "shadow": "file",
+        "hosts": "file"
+    },
+    "home": {
+        "user": {
+            "documents": {},
+            "passwords.txt": "file"
+        }
+    },
+    "var": {
+        "www": {
+            "html": {
+                "index.php": "file"
+            }
+        },
+        "log": {}
+    },
+    "tmp": {}
+}

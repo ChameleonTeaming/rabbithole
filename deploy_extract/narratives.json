@@ -1,0 +1,38 @@
+{
+    "narratives": {
+        "sensitive_file_access": [
+            {
+                "response": "550 Permission denied. Action requires 'sudo'. Please provide admin password.",
+                "note": "Baits the attacker into attempting password guessing."
+            },
+            {
+                "response": "550 Permission denied. Unauthorized access attempt logged and reported to admin 'j.doe'.",
+                "note": "Plants a fake admin username and suggests active monitoring."
+            }
+        ],
+        "unrecognized_command": [
+            {
+                "response": "500 Command not recognized. Did you mean 'help'?",
+                "note": "Probes if the attacker is simply exploring available commands."
+            },
+            {
+                "response": "502 Command not implemented.",
+                "note": "A standard, slightly more informative FTP error."
+            },
+            {
+                "response": "500 Syntax error.",
+                "note": "A generic error that might confuse automated tools."
+            }
+        ],
+        "reconnaissance": [
+            {
+                "response": "200 System status: nominal. All services running.",
+                "note": "Generic positive response to recon commands."
+            },
+            {
+                "response": "451 Requested action aborted: local error in processing. High CPU load detected.",
+                "note": "Simulates a struggling server to deter aggressive scanning."
+            }
+        ]
+    }
+}

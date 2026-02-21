@@ -1,0 +1,75 @@
+{
+    "known_patterns": [
+        {
+            "name": "Simple Brute-Force Bot",
+            "type": "bot",
+            "signature": {
+                "max_session_duration_seconds": 30,
+                "min_commands": 3,
+                "max_command_variety": 2,
+                "required_verbs": ["USER", "PASS"]
+            },
+            "playbook": {
+                "narrative": "Engage aggressive tarpit and provide confusing, non-standard errors.",
+                "tarpit_duration": "long"
+            }
+        },
+        {
+            "name": "Log4Shell Exploit Attempt",
+            "type": "exploit",
+            "signature": {
+                "required_keywords": ["${jndi:", "ldap://", "rmi://"]
+            },
+            "playbook": {
+                "narrative": "Simulate vulnerable Java stack trace but connection refused.",
+                "tarpit_duration": "short"
+            }
+        },
+        {
+            "name": "Ransomware Precursor",
+            "type": "malware",
+            "signature": {
+                "required_verbs": ["vssadmin", "wbadmin", "bcdedit", "cipher"],
+                "required_keywords": ["shadow", "delete", "resize"]
+            },
+            "playbook": {
+                "narrative": "Fake success: 'Shadow copies deleted'. Log critical alert.",
+                "tarpit_duration": "none"
+            }
+        },
+        {
+            "name": "Docker Escape Attempt",
+            "type": "exploit",
+            "signature": {
+                "required_commands": ["capsh", "mount"],
+                "required_keywords": ["cgroup", "/sys/fs/cgroup", "release_agent"]
+            },
+            "playbook": {
+                "narrative": "Simulate 'Read-only file system' error on cgroup mount.",
+                "tarpit_duration": "medium"
+            }
+        },
+        {
+            "name": "Crypto-Mining Setup",
+            "type": "malware",
+            "signature": {
+                "required_keywords": ["xmrig", "stratum+tcp", "nicehash", "minerd"]
+            },
+            "playbook": {
+                "narrative": "Allow download but simulate 'Segmentation Fault' on execution.",
+                "tarpit_duration": "none"
+            }
+        },
+        {
+            "name": "Cloud Metadata Exfiltration",
+            "type": "recon",
+            "signature": {
+                "required_keywords": ["169.254.169.254", "meta-data", "iam/security-credentials"]
+            },
+            "playbook": {
+                "narrative": "Provide fake AWS keys (Honeytokens).",
+                "tarpit_duration": "none"
+            }
+        }
+    ]
+}

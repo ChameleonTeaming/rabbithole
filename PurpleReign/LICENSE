@@ -1,0 +1,17 @@
+MITRE ATT&CK ADVERSARY EMULATION LICENSE (STRICT)
+
+Copyright (c) 2026 PurpleReign Developers
+
+1. AUTHORIZATION
+   This software ("PurpleReign") is licensed for use ONLY by authorized security personnel for the purpose of defensive security testing (Purple Teaming) on systems they own or have explicit written permission to test.
+
+2. RESTRICTIONS (THE "ANTI-THEFT" CLAUSE)
+   - You may NOT use this software for commercial gain without a separate commercial license.
+   - You may NOT redistribute, sell, sub-license, or lease this software.
+   - You may NOT use this software for illegal purposes, including but not limited to unauthorized access, data theft, or disruption of service.
+
+3. NO WARRANTY
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND. USE AT YOUR OWN RISK.
+
+4. REVOCATION
+   This license is automatically revoked if the user violates any local, state, or federal laws while using this software.

@@ -1,0 +1,14 @@
+[
+    {
+        "type": "sql_injection",
+        "file": "AI_bug_bountyhunter/tests/tricky_vuln.py",
+        "line": 13,
+        "content": "cur.execute(f\"SELECT * FROM users WHERE name = {username}\")",
+        "details": "SQL query construction using f-string detected via AST",
+        "severity": "CRITICAL",
+        "risk_score": 5.0,
+        "confidence": "LOW",
+        "remediation": "",
+        "ai_insight": "SQL concatenation found in a test file. Low immediate risk, but promotes bad coding habits."
+    }
+]

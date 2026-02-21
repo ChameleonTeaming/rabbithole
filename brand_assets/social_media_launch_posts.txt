@@ -1,0 +1,41 @@
+--------------------------------------------------------------------------------
+SOCIAL MEDIA LAUNCH KIT - THE CHAMELEON TEAM
+--------------------------------------------------------------------------------
+
+[TWITTER / X POST]
+------------------
+Introducing The Chameleon Team 🦎
+Beyond Red. Beyond Blue.
+
+We are establishing a new paradigm in cyber warfare: "Active Adaptation."
+Our AI-driven honeypots don't just log attacks—they become what the attacker expects, fingerprinting intent in real-time.
+
+Code & Manifesto: github.com/ChameleonTeam
+#CyberSecurity #Infosec #AI #ActiveDefense
+
+[LINKEDIN POST]
+---------------
+I am proud to announce the founding of The Chameleon Team.
+
+While the industry focuses on static defense (Blue) and offensive testing (Red), we identified a gap: The environment itself must be alive.
+
+"Chameleon Teaming" is the practice of using Generative AI to create high-interaction deception environments that adapt to adversary behavior on the fly. We don't block; we engage.
+
+We have released our core engine, RabbitHole (AEGIS MK_II), as an open-source proof of concept. It features:
+- AI-Driven Persona Generation (Gemini)
+- Kernel-Level Sandbox Hardening
+- Deterministic AI Safety Guardrails
+
+Read our Manifesto here: [LINK TO YOUR GITHUB/WEBSITE]
+
+#CyberSecurity #CISO #ThreatIntel #AI #Innovation
+
+[GITHUB PROFILE BIO]
+--------------------
+Name: The Chameleon Team
+Bio: We Become The Enemy So You Can Defeat Them. Pioneering AI-Driven Active Adaptation and Adversarial Emulation.
+Website: https://chameleonteam.com (or your .io/.github.io link)
+
+[REDDIT /r/netsec TITLE]
+------------------------
+I built a "Chameleon Pot" – An AI Honeypot that dynamically hallucinates file systems and vulnerabilities to trap botnets. (Source Code Included)

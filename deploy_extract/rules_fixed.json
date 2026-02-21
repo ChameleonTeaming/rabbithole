@@ -1,0 +1,26 @@
+{
+    "suspicious_commands": [
+        "uname",
+        "tftp",
+        "ftpget"
+    ],
+    "potential_exploit": [
+        "\\x",
+        "\\u00",
+        "%",
+        "{",
+        "}"
+    ],
+    "common_benign_commands": [
+        "USER",
+        "PASS",
+        "SYST",
+        "FEAT",
+        "PWD",
+        "TYPE",
+        "PASV",
+        "QUIT",
+        "CWD",
+        "LIST"
+    ]
+}

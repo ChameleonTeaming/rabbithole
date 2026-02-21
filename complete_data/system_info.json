@@ -1,0 +1,7 @@
+{
+    "os": "Ubuntu 22.04.3 LTS",
+    "kernel": "5.15.0-91-generic",
+    "hostname": "prod-web-01",
+    "arch": "x86_64",
+    "last_update": "2024-01-15"
+}

@@ -1,0 +1,6 @@
+psutil
+pyyaml
+colorama
+requests
+pandas
+tqdm

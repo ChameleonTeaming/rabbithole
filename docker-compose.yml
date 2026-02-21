@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  hive-mind:
+    build: 
+      context: .
+      dockerfile: Dockerfile.hivemind
+    container_name: hive-mind
+    ports:
+      - "127.0.0.1:9443:9443"
+    environment:
+      - HIVE_MIND_TOKEN=${HIVE_MIND_TOKEN}
+    volumes:
+      - ./cert.pem:/app/cert.pem
+      - ./key.pem:/app/key.pem
+    networks:
+      - rabbithole-net
+
+  rabbithole:
+    build: 
+      context: .
+      dockerfile: Dockerfile.rabbithole
+    container_name: rabbithole
+    ports:
+      - "127.0.0.1:8888:8888"
+      - "21:21"
+      - "22:22"
+      - "80:80"
+    environment:
+      - DASHBOARD_USER=${DASHBOARD_USER}
+      - DASHBOARD_PASS=${DASHBOARD_PASS}
+      - HIVE_MIND_TOKEN=${HIVE_MIND_TOKEN}
+      - HUB_URL=https://hive-mind:9443
+    volumes:
+      - ./cert.pem:/app/cert.pem
+      - ./key.pem:/app/key.pem
+      - ./logs:/app/logs
+      - ./quarantine:/app/quarantine
+    depends_on:
+      - hive-mind
+    networks:
+      - rabbithole-net
+    # IRON MASK HARDENING
+    read_only: true
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE # Needed to bind ports 21, 22, 80
+    security_opt:
+      - no-new-privileges:true
+
+networks:
+  rabbithole-net:
+    driver: bridge

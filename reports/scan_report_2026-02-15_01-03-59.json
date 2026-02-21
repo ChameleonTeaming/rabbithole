@@ -1,0 +1,24 @@
+[
+    {
+        "type": "hardcoded_secret",
+        "file": "AI_bug_bountyhunter/tests/vuln_app.py",
+        "line": 11,
+        "content": "API_KEY = \"sk-1234567890abcdef1234567890abcdef\"",
+        "severity": "HIGH",
+        "risk_score": 2.0,
+        "confidence": "HIGH",
+        "remediation": "Ensure this secret is not valid in production. Best practice: use environment variables even in tests.",
+        "ai_insight": "Credential found, but file context indicates this is a test/mock file. Likely a dummy secret."
+    },
+    {
+        "type": "sql_injection",
+        "file": "AI_bug_bountyhunter/tests/vuln_app.py",
+        "line": 30,
+        "content": "query = \"SELECT * FROM users WHERE username = '\" + username + \"'\"",
+        "severity": "HIGH",
+        "risk_score": 5.0,
+        "confidence": "LOW",
+        "remediation": "",
+        "ai_insight": "SQL concatenation found in a test file. Low immediate risk, but promotes bad coding habits."
+    }
+]

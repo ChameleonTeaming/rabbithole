@@ -1,0 +1,56 @@
+version: '3.8'
+
+volumes:
+  rabbithole-data:
+  rabbithole-certs:
+
+services:
+  dind:
+    image: docker:dind
+    privileged: true
+    volumes:
+      - rabbithole-certs:/certs/client
+    environment:
+      DOCKER_TLS_CERTDIR: /certs/client
+    networks:
+      - honeynet
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1024M
+
+  rabbithole:
+    build: .
+    ports:
+      - "21:2121"
+      - "22:2222"
+    volumes:
+      - 'rabbithole-data:/app/data'
+      - './quarantine:/app/quarantine'
+      - 'rabbithole-certs:/certs/client:ro'
+    restart: always
+    environment:
+      - PYTHONUNBUFFERED=1
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - HUB_URL=${HUB_URL}
+      - AUTH_TOKEN=${AUTH_TOKEN}
+      - STORAGE_FILE=/app/data/filesystem.json
+      - BLOCKLIST_FILE=/app/data/ip_blocklist.txt
+      - ALERT_FILE=/app/data/alerts.log
+      - DOCKER_HOST=tcp://dind:2376
+      - DOCKER_TLS_VERIFY=1
+      - DOCKER_CERT_PATH=/certs/client
+    depends_on:
+      - dind
+    networks:
+      - honeynet
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+
+networks:
+  honeynet:
+    driver: bridge

@@ -1,0 +1,12 @@
+FROM python:3.9-slim
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY hive_mind_server.py .
+COPY cert.pem .
+COPY key.pem .
+
+CMD ["python", "hive_mind_server.py"]

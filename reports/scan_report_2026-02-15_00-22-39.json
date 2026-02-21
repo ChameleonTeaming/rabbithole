@@ -1,0 +1,32 @@
+[
+    {
+        "type": "hardcoded_secret",
+        "file": "AI_bug_bountyhunter/tests/vuln_app.py",
+        "line": 5,
+        "content": "API_KEY = \"sk-1234567890abcdef1234567890abcdef\"",
+        "severity": "HIGH",
+        "risk_score": 9.5,
+        "remediation": "Rotate the exposed credential immediately. Store secrets in environment variables or a secure vault (e.g., HashiCorp Vault, AWS Secrets Manager).",
+        "ai_insight": "I detected a high-entropy string assigned to a variable named like a credential. This is a classic pattern for API key leaks."
+    },
+    {
+        "type": "dangerous_function",
+        "file": "AI_bug_bountyhunter/tests/vuln_app.py",
+        "line": 11,
+        "content": "eval(user_input)",
+        "severity": "MEDIUM",
+        "risk_score": 8.0,
+        "remediation": "Avoid using 'eval()', 'exec()', or shell execution functions with user input. Use safer alternatives like 'ast.literal_eval()' or specific libraries.",
+        "ai_insight": "The code executes arbitrary commands or evaluates strings as code. If user input reaches this sink, it leads to Remote Code Execution (RCE)."
+    },
+    {
+        "type": "sql_injection",
+        "file": "AI_bug_bountyhunter/tests/vuln_app.py",
+        "line": 18,
+        "content": "query = \"SELECT * FROM users WHERE username = '\" + username + \"'\"",
+        "severity": "HIGH",
+        "risk_score": 9.8,
+        "remediation": "Use parameterized queries (prepared statements) instead of string concatenation to build SQL queries.",
+        "ai_insight": "I found raw SQL construction using string formatting. This allows attackers to manipulate the query logic."
+    }
+]

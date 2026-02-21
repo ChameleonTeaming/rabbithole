@@ -1,0 +1,50 @@
+[
+    {
+        "type": "sql_injection",
+        "file": "AI_bug_bountyhunter/tests/reliability_benchmark.py",
+        "line": 22,
+        "content": "cur.execute(\"SELECT * FROM users WHERE id = \" + user_input)",
+        "details": "SQL query construction using concatenation detected via AST",
+        "severity": "CRITICAL",
+        "risk_score": 5.0,
+        "confidence": "LOW",
+        "remediation": "",
+        "ai_insight": "SQL concatenation found in a test file. Low immediate risk, but promotes bad coding habits."
+    },
+    {
+        "type": "sql_injection",
+        "file": "AI_bug_bountyhunter/tests/reliability_benchmark.py",
+        "line": 25,
+        "content": "cur.execute(f\"DELETE FROM data WHERE id = {user_input}\")",
+        "details": "SQL query construction using f-string detected via AST",
+        "severity": "CRITICAL",
+        "risk_score": 5.0,
+        "confidence": "LOW",
+        "remediation": "",
+        "ai_insight": "SQL concatenation found in a test file. Low immediate risk, but promotes bad coding habits."
+    },
+    {
+        "type": "dangerous_function",
+        "file": "AI_bug_bountyhunter/tests/reliability_benchmark.py",
+        "line": 33,
+        "content": "eval(expression)",
+        "details": "Usage of eval detected via AST",
+        "severity": "HIGH",
+        "risk_score": 9.0,
+        "confidence": "HIGH",
+        "remediation": "Replace with safer alternatives. Validate and sanitize all inputs strictly if this function is absolutely necessary.",
+        "ai_insight": "Dynamic execution of code detected involving variables. If these variables are tainted by user input, this is RCE."
+    },
+    {
+        "type": "flask_debug",
+        "file": "AI_bug_bountyhunter/tests/reliability_benchmark.py",
+        "line": 41,
+        "content": "app.run(debug=True)",
+        "details": "Flask debug mode enabled (AST confirmed)",
+        "severity": "HIGH",
+        "risk_score": 9.0,
+        "confidence": "HIGH",
+        "remediation": "Ensure 'debug=False' in production. Use environment variables to toggle this setting.",
+        "ai_insight": "Flask app running in debug mode. This exposes the interactive Werkzeug debugger, allowing arbitrary code execution (RCE) if accessible."
+    }
+]

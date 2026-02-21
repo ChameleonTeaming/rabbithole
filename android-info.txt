@@ -1,0 +1,5 @@
+require board=angler
+
+require version-bootloader=angler-03.84
+
+require version-baseband=angler-03.88

@@ -1,0 +1,32 @@
+{
+    "known_patterns": [
+        {
+            "name": "Simple Brute-Force Bot",
+            "type": "bot",
+            "signature": {
+                "max_session_duration_seconds": 30,
+                "min_commands": 3,
+                "max_command_variety": 2,
+                "required_verbs": ["USER", "PASS"]
+            },
+            "playbook": {
+                "narrative": "Engage aggressive tarpit and provide confusing, non-standard errors to break the script.",
+                "tarpit_duration": "long"
+            }
+        },
+        {
+            "name": "Cautious Human Explorer",
+            "type": "human",
+            "signature": {
+                "min_session_duration_seconds": 20,
+                "min_commands": 4,
+                "min_command_variety": 3,
+                "required_verbs": ["SYST", "PWD", "LIST"]
+            },
+            "playbook": {
+                "narrative": "Engage with subtle, human-like narrative responses to build confidence and extract intelligence.",
+                "tarpit_duration": "short"
+            }
+        }
+    ]
+}

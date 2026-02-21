@@ -1,0 +1,26 @@
+[
+    {
+        "type": "sql_injection",
+        "file": "AI_bug_bountyhunter/tests/tricky_vuln.py",
+        "line": 13,
+        "content": "cur.execute(f\"SELECT * FROM users WHERE name = {username}\")",
+        "details": "SQL query construction using f-string detected via AST",
+        "severity": "CRITICAL",
+        "risk_score": 5.0,
+        "confidence": "LOW",
+        "remediation": "",
+        "ai_insight": "SQL concatenation found in a test file. Low immediate risk, but promotes bad coding habits."
+    },
+    {
+        "type": "flask_debug",
+        "file": "AI_bug_bountyhunter/tests/tricky_vuln.py",
+        "line": 19,
+        "content": "app.run(host='0.0.0.0', port=5000, debug=True)",
+        "details": "Flask debug mode enabled (AST confirmed)",
+        "severity": "HIGH",
+        "risk_score": 9.0,
+        "confidence": "HIGH",
+        "remediation": "Ensure 'debug=False' in production. Use environment variables to toggle this setting.",
+        "ai_insight": "Flask app running in debug mode. This exposes the interactive Werkzeug debugger, allowing arbitrary code execution (RCE) if accessible."
+    }
+]

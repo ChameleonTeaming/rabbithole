@@ -1,0 +1,13 @@
+[
+    {
+        "type": "sql_injection",
+        "file": "AI_bug_bountyhunter/tests/vuln_app.py",
+        "line": 31,
+        "content": "query = \"SELECT * FROM users WHERE username = '\" + username + \"'\"",
+        "severity": "HIGH",
+        "risk_score": 5.0,
+        "confidence": "LOW",
+        "remediation": "",
+        "ai_insight": "SQL concatenation found in a test file. Low immediate risk, but promotes bad coding habits."
+    }
+]

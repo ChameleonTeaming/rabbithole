@@ -1,0 +1,24 @@
+{
+    "email_alerts": {
+        "enabled": true,
+        "sender_email": "suadaabdulahad@gmail.com",
+        "recipient_email": "illuminatislogik@outlook.com",
+        "smtp_server": "smtp.gmail.com",
+        "smtp_port": 587,
+        "use_tls": true
+    },
+    "threat_intelligence": {
+        "enabled": true,
+        "url": "https://rules.emergingthreats.net/fwrules/emerging-Block-IPs.txt"
+    },
+    "ai_integration": {
+        "enabled": true,
+        "api_key": "AIzaSyBPMpCYyuErIOZxeoSkGjyyHx-1dzDUJQs",
+        "model": "gemini-2.5-flash"
+    },
+    "hive_mind": {
+        "enabled": true,
+        "hub_url": "https://hivemind.rabbithole.io",
+        "auth_token": "YOUR_HIVE_MIND_TOKEN"
+    }
+}

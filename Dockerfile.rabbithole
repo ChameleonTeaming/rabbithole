@@ -1,0 +1,26 @@
+FROM python:3.9-slim
+
+WORKDIR /app
+
+# Install system dependencies for crypto/net
+RUN apt-get update && apt-get install -y \
+    gcc \
+    libssl-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY rabbithole.py .
+COPY config.json .
+COPY narratives.json .
+COPY system_info.json .
+COPY cert.pem .
+COPY key.pem .
+COPY host.key .
+
+# Create quarantine dir
+RUN mkdir -p quarantine logs
+
+CMD ["python", "rabbithole.py"]
+
