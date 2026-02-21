@@ -14,3 +14,15 @@ node_modules/
 pmbootstrap/
 pmos/
 angler-opm7.181205.001/
+gemini.js
+credentials.txt
+.env
+host.key
+key.pem
+cert.pem
+license.key
+*.key
+.env
+verity_engine/
+persona_manager.py
+personas/
