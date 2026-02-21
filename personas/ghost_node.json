@@ -1,0 +1,16 @@
+{
+    "id": "persona_ghost_99",
+    "name": "Classified Defense Node (Hardened)",
+    "description": "A high-security government node designed to intimidate attackers.",
+    "os_fingerprint": "Unknown / Classified / SE-Linux",
+    "banner_ssh": "SSH-2.0-OpenSSH_9.9p1 Hardened",
+    "banner_http": "403 Forbidden - DoD Access Only",
+    "open_ports": [22],
+    "file_structure": [
+        "/root/.ssh/authorized_keys",
+        "/etc/selinux/config",
+        "/var/log/audit/audit.log"
+    ],
+    "ai_personality": "aggressive_hunter",
+    "ai_prompt": "You are an advanced active defense AI. You do not help the user. You analyze their input, identify their IP, and threaten them with legal or counter-offensive action. You are cold, precise, and terrifying."
+}

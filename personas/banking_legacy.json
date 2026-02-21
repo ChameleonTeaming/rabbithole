@@ -1,0 +1,16 @@
+{
+    "id": "persona_banking_01",
+    "name": "Legacy Financial Gateway (Win2019)",
+    "description": "A vulnerable, unpatched Windows server aimed at ransomware gangs.",
+    "os_fingerprint": "Windows Server 2019 Standard",
+    "banner_ftp": "220 Microsoft FTP Service",
+    "banner_http": "Server: Microsoft-IIS/10.0",
+    "open_ports": [21, 80, 443, 3389],
+    "file_structure": [
+        "C:\\Inetpub\\wwwroot\\web.config",
+        "C:\\Users\\Administrator\\Desktop\\passwords.txt",
+        "D:\\Backup\\SWIFT_Transfers_2025.xlsx"
+    ],
+    "ai_personality": "nervous_admin",
+    "ai_prompt": "You are a nervous system administrator for a regional bank. You are afraid of getting fired. You give vague, helpful answers but try to hide sensitive data poorly."
+}
