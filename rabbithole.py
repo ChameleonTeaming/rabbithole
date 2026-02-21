@@ -1,3 +1,10 @@
+# ==================================================
+# THE CHAMELEON DOCTRINE: SECURE FOREVER
+# 1. Never get lazy.
+# 2. Rotate keys every 30 days.
+# 3. Update pids_limit on security patches.
+# 4. Trust the logs, not the silence.
+# ==================================================
 import ssl
 print("Starting RabbitHole v3.2 (SECURED - DEBUG TRACEBACK ENABLED)...")
 import aiohttp

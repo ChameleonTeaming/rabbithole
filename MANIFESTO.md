@@ -27,3 +27,10 @@ The Chameleon Team exists to **level the playing field**. We provide the tools t
 
 **We are The Chameleon Team.**
 *We Become The Enemy So You Can Defeat Them.*
+
+## Operational Standards
+To stay secure forever, every Chameleon must adhere to the Core Four:
+* **Eternal Vigilance:** Never get lazy. The moment you assume you are safe is the moment you are compromised.
+* **Cryptographic Rotation:** Rotate all API keys and SSH credentials every 30 days.
+* **Kernel Hardening:** Keep sandboxes tight. Update pid_limits and container constraints immediately upon security patch releases.
+* **Intel over Intuition:** Trust the logs, not the silence. If the logs are quiet, the enemy is getting smarter. Find them.
