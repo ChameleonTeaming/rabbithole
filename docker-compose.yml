@@ -1,53 +1,220 @@
-version: '3.8'
-
 services:
   hive-mind:
-    build: 
+    build:
       context: .
       dockerfile: Dockerfile.hivemind
     container_name: hive-mind
     ports:
       - "127.0.0.1:9443:9443"
     environment:
+      - PYTHONUNBUFFERED=1
       - HIVE_MIND_TOKEN=${HIVE_MIND_TOKEN}
     volumes:
-      - ./cert.pem:/app/cert.pem
-      - ./key.pem:/app/key.pem
+      - ./nodes.json:/app/nodes.json
     networks:
       - rabbithole-net
 
-  rabbithole:
-    build: 
+  architect-ai:
+    build:
+      context: .
+      dockerfile: Dockerfile.architect
+    container_name: architect-ai
+    environment:
+      - HIVE_MIND_TOKEN=${HIVE_MIND_TOKEN}
+      - HUB_URL=https://hive-mind:9443
+    depends_on:
+      - hive-mind
+    networks:
+      - rabbithole-net
+
+  rabbithole-1:
+    build:
       context: .
       dockerfile: Dockerfile.rabbithole
-    container_name: rabbithole
+    container_name: rabbithole-1
     ports:
       - "127.0.0.1:8888:8888"
-      - "21:21"
-      - "22:22"
-      - "80:80"
+      - "21:2121"
+      - "2222:2222"
+      - "80:8080"
     environment:
       - DASHBOARD_USER=${DASHBOARD_USER}
       - DASHBOARD_PASS=${DASHBOARD_PASS}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - XAI_API_KEY=${XAI_API_KEY}
+      - VERIFY_SSL_HUB=${VERIFY_SSL_HUB}
       - HIVE_MIND_TOKEN=${HIVE_MIND_TOKEN}
+      - LEGAL_INTEGRITY_KEY=${LEGAL_INTEGRITY_KEY}
       - HUB_URL=https://hive-mind:9443
     volumes:
-      - ./cert.pem:/app/cert.pem
-      - ./key.pem:/app/key.pem
       - ./logs:/app/logs
       - ./quarantine:/app/quarantine
     depends_on:
       - hive-mind
     networks:
       - rabbithole-net
-    # IRON MASK HARDENING
-    read_only: true
-    cap_drop:
-      - ALL
-    cap_add:
-      - NET_BIND_SERVICE # Needed to bind ports 21, 22, 80
-    security_opt:
-      - no-new-privileges:true
+
+  rabbithole-2:
+    build:
+      context: .
+      dockerfile: Dockerfile.rabbithole
+    container_name: rabbithole-2
+    ports:
+      - "8082:8080"
+      - "2122:2121"
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - XAI_API_KEY=${XAI_API_KEY}
+      - VERIFY_SSL_HUB=${VERIFY_SSL_HUB}
+      - HIVE_MIND_TOKEN=${HIVE_MIND_TOKEN}
+      - LEGAL_INTEGRITY_KEY=${LEGAL_INTEGRITY_KEY}
+      - HUB_URL=https://hive-mind:9443
+    networks:
+      - rabbithole-net
+
+  rabbithole-3:
+    build:
+      context: .
+      dockerfile: Dockerfile.rabbithole
+    container_name: rabbithole-3
+    ports:
+      - "8083:8080"
+      - "2123:2121"
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - XAI_API_KEY=${XAI_API_KEY}
+      - VERIFY_SSL_HUB=${VERIFY_SSL_HUB}
+      - HIVE_MIND_TOKEN=${HIVE_MIND_TOKEN}
+      - LEGAL_INTEGRITY_KEY=${LEGAL_INTEGRITY_KEY}
+      - HUB_URL=https://hive-mind:9443
+    networks:
+      - rabbithole-net
+
+  rabbithole-4:
+    build:
+      context: .
+      dockerfile: Dockerfile.rabbithole
+    container_name: rabbithole-4
+    ports:
+      - "8084:8080"
+      - "2124:2121"
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - XAI_API_KEY=${XAI_API_KEY}
+      - VERIFY_SSL_HUB=${VERIFY_SSL_HUB}
+      - HIVE_MIND_TOKEN=${HIVE_MIND_TOKEN}
+      - LEGAL_INTEGRITY_KEY=${LEGAL_INTEGRITY_KEY}
+      - HUB_URL=https://hive-mind:9443
+    networks:
+      - rabbithole-net
+
+  rabbithole-5:
+    build:
+      context: .
+      dockerfile: Dockerfile.rabbithole
+    container_name: rabbithole-5
+    ports:
+      - "8085:8080"
+      - "2125:2121"
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - XAI_API_KEY=${XAI_API_KEY}
+      - VERIFY_SSL_HUB=${VERIFY_SSL_HUB}
+      - HIVE_MIND_TOKEN=${HIVE_MIND_TOKEN}
+      - LEGAL_INTEGRITY_KEY=${LEGAL_INTEGRITY_KEY}
+      - HUB_URL=https://hive-mind:9443
+    networks:
+      - rabbithole-net
+
+  rabbithole-6:
+    build:
+      context: .
+      dockerfile: Dockerfile.rabbithole
+    container_name: rabbithole-6
+    ports:
+      - "8086:8080"
+      - "2126:2121"
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - XAI_API_KEY=${XAI_API_KEY}
+      - VERIFY_SSL_HUB=${VERIFY_SSL_HUB}
+      - HIVE_MIND_TOKEN=${HIVE_MIND_TOKEN}
+      - LEGAL_INTEGRITY_KEY=${LEGAL_INTEGRITY_KEY}
+      - HUB_URL=https://hive-mind:9443
+    networks:
+      - rabbithole-net
+
+  rabbithole-7:
+    build:
+      context: .
+      dockerfile: Dockerfile.rabbithole
+    container_name: rabbithole-7
+    ports:
+      - "8087:8080"
+      - "2127:2121"
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - XAI_API_KEY=${XAI_API_KEY}
+      - VERIFY_SSL_HUB=${VERIFY_SSL_HUB}
+      - HIVE_MIND_TOKEN=${HIVE_MIND_TOKEN}
+      - LEGAL_INTEGRITY_KEY=${LEGAL_INTEGRITY_KEY}
+      - HUB_URL=https://hive-mind:9443
+    networks:
+      - rabbithole-net
+
+  rabbithole-8:
+    build:
+      context: .
+      dockerfile: Dockerfile.rabbithole
+    container_name: rabbithole-8
+    ports:
+      - "8088:8080"
+      - "2128:2121"
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - XAI_API_KEY=${XAI_API_KEY}
+      - VERIFY_SSL_HUB=${VERIFY_SSL_HUB}
+      - HIVE_MIND_TOKEN=${HIVE_MIND_TOKEN}
+      - LEGAL_INTEGRITY_KEY=${LEGAL_INTEGRITY_KEY}
+      - HUB_URL=https://hive-mind:9443
+    networks:
+      - rabbithole-net
+
+  rabbithole-9:
+    build:
+      context: .
+      dockerfile: Dockerfile.rabbithole
+    container_name: rabbithole-9
+    ports:
+      - "8089:8080"
+      - "2129:2121"
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - XAI_API_KEY=${XAI_API_KEY}
+      - VERIFY_SSL_HUB=${VERIFY_SSL_HUB}
+      - HIVE_MIND_TOKEN=${HIVE_MIND_TOKEN}
+      - LEGAL_INTEGRITY_KEY=${LEGAL_INTEGRITY_KEY}
+      - HUB_URL=https://hive-mind:9443
+    networks:
+      - rabbithole-net
+
+  rabbithole-10:
+    build:
+      context: .
+      dockerfile: Dockerfile.rabbithole
+    container_name: rabbithole-10
+    ports:
+      - "8090:8080"
+      - "2130:2121"
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - XAI_API_KEY=${XAI_API_KEY}
+      - VERIFY_SSL_HUB=${VERIFY_SSL_HUB}
+      - HIVE_MIND_TOKEN=${HIVE_MIND_TOKEN}
+      - LEGAL_INTEGRITY_KEY=${LEGAL_INTEGRITY_KEY}
+      - HUB_URL=https://hive-mind:9443
+    networks:
+      - rabbithole-net
 
 networks:
   rabbithole-net:

@@ -7,9 +7,9 @@ import datetime
 import os
 import ssl
 
-HUB_URL = "https://localhost:9443"
+HUB_URL = os.getenv('HUB_URL', "https://127.0.0.1:9443")
 # Using the default token for demo purposes
-AUTH_TOKEN = "6d3574ff21cc17ab6b00405020f2a277" 
+AUTH_TOKEN = os.getenv('HIVE_MIND_TOKEN', "6d3574ff21cc17ab6b00405020f2a277") 
 
 ATTACK_SCENARIOS = [
     {"ip": "116.203.44.1", "country": "DE", "type": "SSH Brute Force", "count": 50},
@@ -18,7 +18,11 @@ ATTACK_SCENARIOS = [
     {"ip": "192.99.14.22", "country": "CA", "type": "WordPress Scan", "count": 35},
     {"ip": "103.21.244.0", "country": "VN", "type": "Log4Shell Exploit", "count": 1},
     {"ip": "5.188.62.76", "country": "RU", "type": "Ransomware Beacon", "count": 5},
-    {"ip": "167.99.163.8", "country": "US", "type": "Port Scan", "count": 1000}
+    {"ip": "167.99.163.8", "country": "US", "type": "Port Scan", "count": 1000},
+    {"ip": "213.66.139.43", "country": "SE", "type": "SWIFT Transaction Interception", "count": 3},
+    {"ip": "91.24.185.37", "country": "IR", "type": "Modbus/TCP Logic Injection", "count": 8},
+    {"ip": "101.32.45.112", "country": "KP", "type": "Aerospace Schematic Exfiltration", "count": 1},
+    {"ip": "77.210.63.142", "country": "UA", "type": "BGP Hijacking Attempt", "count": 15}
 ]
 
 SIMULATED_NODES = [
@@ -30,7 +34,12 @@ SIMULATED_NODES = [
     "RH-NODE-SYDNEY-04",
     "RH-NODE-SAOPAULO-07",
     "RH-NODE-MUMBAI-08",
-    "RH-NODE-TORONTO-06"
+    "RH-NODE-TORONTO-06",
+    "RH-NODE-SWIFT-GATEWAY-01",
+    "RH-NODE-GRID-CONTROL-OSLO",
+    "RH-NODE-PROPULSION-LAB-STAGING",
+    "RH-NODE-ZURICH-VAULT-02",
+    "RH-NODE-TEL-AVIV-CORE-01"
 ]
 
 async def report_incident(session, node_id):

@@ -13,13 +13,13 @@
 #
 # 2. Upload Files:
 #    - From your local machine (Laptop/PC), run:
-#      scp -r gemini-cli/ <GCP_USER>@<YOUR_GCP_VM_IP>:~/
+#      scp -r ai_honeypot/ <GCP_USER>@<YOUR_GCP_VM_IP>:~/
 #
 # 3. Run Installer:
 #    - SSH into your GCP VM:
 #      ssh <GCP_USER>@<YOUR_GCP_VM_IP>
 #    - Execute the installer:
-#      cd gemini-cli && sudo ./install_gcp.sh
+#      cd ai_honeypot && sudo ./install_gcp.sh
 #
 # 4. Access (Secure Tunnel):
 #    - From your local machine, run the SSH tunnel command printed at the end.
@@ -66,6 +66,9 @@ if ! command -v docker &> /dev/null; then
     sudo usermod -aG docker $USER
     # Install Docker Compose (v2 plugin is standard now)
     sudo apt-get install -y docker-compose-plugin
+    # Refresh group membership for current session
+    newgrp docker <<EONG
+EONG
 else
     echo "    -> Docker already installed."
 fi
@@ -80,6 +83,7 @@ sudo ufw allow 22/tcp
 # Allow Honeypot Ports
 sudo ufw allow 80/tcp   # HTTP Trap
 sudo ufw allow 21/tcp   # FTP Trap
+sudo ufw allow 2222/tcp # SSH Trap
 # Dashboard (8888) and Hub (9443) are blocked externally!
 # Access via SSH Tunnel: ssh -L 8888:127.0.0.1:8888 user@ip
 sudo ufw --force enable
@@ -94,9 +98,14 @@ if [ ! -f .env ]; then
 fi
 # Secure permissions
 chmod 600 .env
-chmod 600 key.pem cert.pem host.key 2>/dev/null || true
+chmod 644 cert.pem key.pem host.key 2>/dev/null || true
+
+# Ensure data directories are writable by the container users
+mkdir -p logs quarantine
+sudo chown -R 10001:10001 logs quarantine
 
 # Build & Launch
+
 sudo docker compose build
 sudo docker compose up -d
 

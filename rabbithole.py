@@ -34,6 +34,22 @@ import requests
 import base64
 from aiohttp import web
 from typing import List, Dict, Any, Optional, Set, Union
+
+class PinnedResolver(aiohttp.resolver.AbstractResolver):
+    """S-TIER: Custom resolver to pin a hostname to a specific IP, preventing DNS rebinding attacks."""
+    def __init__(self, pinned_ip):
+        self.pinned_ip = pinned_ip
+    async def resolve(self, host, port=0, family=socket.AF_INET):
+        return [{
+            'hostname': host,
+            'host': self.pinned_ip,
+            'port': port,
+            'family': family,
+            'proto': 0,
+            'flags': 0
+        }]
+    async def close(self): pass
+
 from ipwhois import IPWhois
 from prometheus_client import start_http_server, Counter, Histogram, Gauge
 
@@ -48,6 +64,58 @@ PAYLOADS_CAPTURED = Counter('rabbithole_payloads_total', 'Total malware payloads
 AI_LATENCY = Histogram('rabbithole_ai_latency_seconds', 'Latency of Gemini AI responses')
 # AI API Error Count
 AI_ERRORS = Counter('rabbithole_ai_errors_total', 'Total Gemini AI API errors')
+
+# --- AEGIS: Hyperscale Learning Module ---
+class InfiniteDecoy:
+    """Generates hyper-scale synthetic data streams to trap attackers and build forensic dossiers."""
+    def __init__(self, max_daily_mb: int = 500, throttle_kbps: int = 50):
+        self.max_daily_bytes = max_daily_mb * 1024 * 1024
+        self.throttle_bps = throttle_kbps * 1024
+        self.daily_usage = collections.defaultdict(int) # date_str -> total_bytes
+        self._lock = threading.Lock()
+        logger.info(f"Infinite Decoy Module Initialized: {max_daily_mb}MB/day limit, {throttle_kbps}KB/s throttle.")
+
+    def _get_date_str(self):
+        return datetime.datetime.now().strftime("%Y-%m-%d")
+
+    def can_stream(self, bytes_requested: int) -> bool:
+        with self._lock:
+            ds = self._get_date_str()
+            if self.daily_usage[ds] + bytes_requested > self.max_daily_bytes:
+                logger.warning(f"Infinite Decoy: Daily safety limit ({self.max_daily_bytes} bytes) reached. Stream terminated.")
+                return False
+            return True
+
+    def record_usage(self, bytes_sent: int):
+        with self._lock:
+            self.daily_usage[self._get_date_str()] += bytes_sent
+
+    async def generate_stream(self, session_id: str, file_context: str = "generic_data"):
+        """Generates a pseudo-random, high-entropy stream that looks like encrypted data or code."""
+        chunk_size = 4096
+        header = f"\n-- AEGIS SECURE ARCHIVE BLOCK [{uuid.uuid4()}] --\n"
+        header += f"Source: internal_audit_vault\n"
+        header += f"Context: {file_context}\n"
+        header += f"Integrity_Check: {hashlib.sha256(session_id.encode()).hexdigest()}\n"
+        header += "="*40 + "\n"
+        
+        yield header.encode()
+        self.record_usage(len(header))
+
+        while self.can_stream(chunk_size):
+            # Generate high-entropy "garbage" that is hard to compress
+            chunk = os.urandom(chunk_size)
+            if random.random() > 0.8:
+                chunk = base64.b64encode(chunk[:int(chunk_size/2)]) + b"\n"
+            
+            yield chunk
+            self.record_usage(len(chunk))
+            
+            # Throttling logic: Stay engaged without burning bandwidth
+            await asyncio.sleep(chunk_size / self.throttle_bps)
+        
+        footer = f"\n-- END OF ENCRYPTED STREAM SEGMENT --\n[INSUFFICIENT_PERMISSIONS_FOR_FURTHER_READ]\n"
+        yield footer.encode()
 # Concurrent Active Sessions
 ACTIVE_SESSIONS = Gauge('rabbithole_active_sessions', 'Current number of active attacker sessions', ['protocol'])
 
@@ -67,7 +135,9 @@ class HiveMindClient:
         """
         self.config: Dict[str, Any] = self._load_config(config_file).get('hive_mind', {})
         self.hub_url: Optional[str] = os.getenv('HUB_URL') or self.config.get('hub_url')
-        self.auth_token: Optional[str] = os.getenv('AUTH_TOKEN') or self.config.get('auth_token')
+        self.auth_token: Optional[str] = os.getenv('AUTH_TOKEN') or os.getenv('HIVE_MIND_TOKEN') or self.config.get('auth_token')
+        # S-TIER: Support self-signed certs in test environments via environment flag
+        self.verify_ssl: bool = os.getenv('VERIFY_SSL_HUB', 'true').lower() == 'true'
         # S-TIER: Unique node identifier for mesh tracking
         self.node_id: str = self._get_or_create_node_id()
 
@@ -129,23 +199,20 @@ class HiveMindClient:
         # Tag report with source node identity
         report_data['node_id'] = self.node_id
         
-        logger.info(f"Transmitting report from {self.node_id} to Hive Mind Hub...")
+        logger.info(f"Transmitting report from {self.node_id} to Hive Mind Hub at {self.hub_url}...")
         headers = {"Authorization": f"Bearer {self.auth_token}", "Content-Type": "application/json"}
         try:
-            ssl_ctx = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
-            if os.path.exists('cert.pem'):
-                ssl_ctx.load_verify_locations('cert.pem')
-            else:
-                logger.warning("cert.pem not found, Hive Mind SSL verification might fail.")
-            
+            # S-TIER: Enable SSL verification for secure mesh communication.
             async with aiohttp.ClientSession() as session:
-                async with session.post(f"{self.hub_url}/api/incident", json=report_data, headers=headers, ssl=ssl_ctx) as resp:
+                async with session.post(f"{self.hub_url}/api/incident", json=report_data, headers=headers, ssl=self.verify_ssl) as resp:
                     if resp.status == 201:
                         logger.info("Hive Mind transmission successful.")
                     else:
                         logger.warning(f"Hive Mind hub rejected report: {resp.status}")
+                        if resp.status == 401:
+                            logger.error("Hive Mind Hub authentication failed. Check your token/key.")
         except Exception as e:
-            logger.error(f"Hive Mind connection failed: {e}")
+            logger.error(f"Hive Mind connection failed to {self.hub_url}: {e}")
 
     async def fetch_global_blocklist(self) -> List[str]:
         """Retrieves the global blocklist from the hub for proactive defense.
@@ -153,22 +220,25 @@ class HiveMindClient:
         Returns:
             A list of IP addresses (strings) that are globally blocked.
         """
-        if not self.hub_url: return []
+        if not self.hub_url: 
+            logger.warning("Hive Mind Hub URL not configured. Skipping blocklist sync.")
+            return []
         
         headers = {"Authorization": f"Bearer {self.auth_token}"}
         params = {"node_id": self.node_id}
         try:
-            ssl_ctx = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
-            if os.path.exists('cert.pem'):
-                ssl_ctx.load_verify_locations('cert.pem')
-            
+            # S-TIER: Secure synchronization with central hub.
             async with aiohttp.ClientSession() as session:
-                async with session.get(f"{self.hub_url}/api/blocklist", headers=headers, params=params, ssl=ssl_ctx) as resp:
+                async with session.get(f"{self.hub_url}/api/blocklist", headers=headers, params=params, ssl=self.verify_ssl) as resp:
                     if resp.status == 200:
-                        logger.info("Successfully synchronized with Hive Mind Hub.")
+                        logger.info(f"Successfully synchronized {self.node_id} with Hive Mind Hub.")
                         return await resp.json()
+                    else:
+                        logger.warning(f"Hive Mind hub blocklist request failed: {resp.status}")
+                        if resp.status == 401:
+                            logger.error("Hive Mind Hub authentication failed during blocklist sync.")
         except Exception as e:
-            logger.error(f"Failed to sync global blocklist: {e}")
+            logger.error(f"Failed to sync global blocklist from {self.hub_url}: {e}")
         return []
 
 # --- Forensic Tracer: Lawful Attribution Module ---
@@ -239,14 +309,31 @@ class LawfulIntercept:
         return f"http://trace.intelligence.gov.internal:{self.port}/verify/{token}.gif"
 
     async def start_listener(self):
-        """Starts a stealthy HTTP listener to catch de-anonymization triggers."""
+        """Starts a stealthy HTTP listener to catch de-anonymization triggers with port-retry logic."""
         app = web.Application()
         app.add_routes([web.get('/verify/{token}.gif', self.handle_trigger)])
         runner = web.AppRunner(app)
         await runner.setup()
-        site = web.TCPSite(runner, self.host, self.port)
-        await site.start()
-        logger.info(f"Lawful Intercept Listener active on port {self.port}")
+        
+        max_retries = 10
+        for i in range(max_retries):
+            current_port = self.port + i
+            site = web.TCPSite(runner, self.host, current_port)
+            try:
+                await site.start()
+                if current_port != self.port:
+                    logger.warning(f"Lawful Intercept: Port {self.port} was busy. Re-bound to {current_port}")
+                    self.port = current_port
+                logger.info(f"Lawful Intercept Listener active on port {self.port}")
+                return
+            except OSError as e:
+                if e.errno == 98: # Address already in use
+                    continue
+                else:
+                    logger.error(f"Lawful Intercept Listener fatal error: {e}")
+                    break
+        
+        logger.critical("Lawful Intercept Listener failed to bind after 10 attempts. Module DISABLED.")
 
     async def handle_trigger(self, request: web.Request) -> web.Response:
         token = request.match_info.get('token', '').replace('.gif', '')
@@ -585,6 +672,125 @@ class MalwareAnalyst:
                 sha256_hash.update(byte_block)
         return sha256_hash.hexdigest()
 
+# --- Project Breaker.ai: Offensive Defense Module ---
+class BreakerAI:
+    """Implements legal offensive-defense (Aikido) counter-measures."""
+    
+    def __init__(self):
+        self.active_strikes = collections.defaultdict(list)
+
+    async def deploy_tar_bomb(self, ip: str, filename: str):
+        """Generates a streaming zip bomb to exhaust attacker storage."""
+        logger.warning(f"BREAKER.AI: Deploying Tar-Bomb against {ip} via {filename}")
+        # Return an async generator that streams infinite highly-compressible data
+        async def bomb_stream():
+            # A simple representation of a zip bomb header
+            yield b"PK\x03\x04\x14\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+            chunk = b"\x00" * 65536 # 64KB chunks of zeros
+            while True:
+                yield chunk
+                # Slow enough to stay connected, fast enough to fill buffers
+                await asyncio.sleep(0.01)
+        return bomb_stream()
+
+    def get_aggressive_tarpit_delay(self) -> float:
+        """Returns a high-latency delay for algorithmic connection exhaustion."""
+        return random.uniform(30.0, 60.0)
+
+# --- Project Drift King: Autonomous Cloud Evasion ---
+class DriftKing:
+    """Manages autonomous server migration to evade DDoS and targeted pressure."""
+    def __init__(self, the_void):
+        self.the_void = the_void
+        self.pressure_level = 0.0
+        self.migration_triggered = False
+        self.last_hop_time = time.time()
+
+    async def monitor_pressure(self):
+        """Continuously monitors for high-pressure indicators (DDoS)."""
+        while True:
+            # S-TIER: Logic to detect overwhelming traffic or AI targeted surge
+            active_sessions = len(self.the_void.sessions)
+            total_conn = self.the_void.total_connections
+            
+            # Migration Condition: 80% capacity or rapid session growth
+            if (total_conn > 80 or active_sessions > 40) and not self.migration_triggered:
+                logger.critical(f"DRIFT KING: High structural pressure detected ({total_conn} connections)! Initiating Ghosting Protocol...")
+                self.migration_triggered = True
+                event_data = {
+                    "event": "migration_start", 
+                    "reason": "DDoS_SENSE",
+                    "source_ip": "136.116.67.110",
+                    "target_region": random.choice(["us-east1-b", "eu-west1-a", "asia-northeast1-b"])
+                }
+                if self.the_void.gui:
+                    await self.the_void.gui.broadcast({"type": "drift", "data": event_data})
+                
+                # S-TIER: Centralize telemetry to Hive Hub
+                await self.the_void.report_event_to_hub("drift", event_data)
+
+                # Simulate Cloud Migration Latency
+                await asyncio.sleep(10) 
+                logger.info("DRIFT KING: Migration successful. Node has ghosted to new region.")
+                self.last_hop_time = time.time()
+
+            # Reset trigger if pressure subsides (for simulation purposes)
+            if total_conn < 20:
+                self.migration_triggered = False
+
+            await asyncio.sleep(5)
+            
+# --- Project eBPF: Kernel-Level Deception Simulator ---
+class EBPFDeceptor:
+    """Simulates kernel-level syscall interception and deception using eBPF hooks."""
+    def __init__(self):
+        self.active_hooks = {
+            "sys_open": "intercepted",
+            "sys_read": "spoofed",
+            "sys_execve": "sandboxed"
+        }
+
+    def get_kernel_insight(self, command: str) -> str:
+        """Simulates the eBPF hook analyzing a shell command at the syscall level."""
+        if "cat" in command or "open" in command:
+            return "eBPF_EVENT: [sys_open] detected access to sensitive inode. Injecting fake buffer."
+        if "exec" in command or "./" in command:
+            return "eBPF_EVENT: [sys_execve] unauthorized binary execution attempt. Mapping to sandbox."
+        return "eBPF_STATUS: Monitoring syscall ring buffer (IDLE)."
+
+# --- Project DEF CON Dominance: Physical Hardening ---
+class HardwareProtector:
+    """Manages physical security protocols for on-premise hardware deployments."""
+    def __init__(self, the_void):
+        self.the_void = the_void
+        self.tamper_status = "SECURE"
+        self.air_gap_active = False
+
+    async def initiate_self_destruct(self, reason: str = "TAMPER_DETECTED"):
+        """Simulates the cryptographic wiping of all sensitive data."""
+        logger.critical(f"HARDWARE PROTECTOR: Protocol RED initiated! Reason: {reason}")
+        self.tamper_status = "WIPING_DATA"
+        event_data = {"event": "self_destruct", "reason": reason}
+        # Simulate Wiping
+        if self.the_void.gui:
+            await self.the_void.gui.broadcast({"type": "hardware", "data": event_data})
+        
+        # S-TIER: Centralize telemetry to Hive Hub
+        await self.the_void.report_event_to_hub("hardware", event_data)
+
+        await asyncio.sleep(2)
+        logger.critical("DEF CON: Data eliminated. System Offline.")
+
+    async def engage_infinite_mirror(self):
+        """Simulates the rogue WiFi AP trap airwaves activation."""
+        logger.info("DEF CON: Infinite Mirror Rogue AP active. Luring local airwaves.")
+        event_data = {"event": "infinite_mirror", "status": "ACTIVE"}
+        if self.the_void.gui:
+            await self.the_void.gui.broadcast({"type": "hardware", "data": event_data})
+        
+        # S-TIER: Centralize telemetry to Hive Hub
+        await self.the_void.report_event_to_hub("hardware", event_data)
+
 # --- The Shepherd: Adaptive Response AI ---
 
 class DockerSandbox:
@@ -907,6 +1113,12 @@ class TheShepherd:
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
         headers = {"x-goog-api-key": self.api_key, "Content-Type": "application/json"}
         identity_str = f"OS: {self.system_info['os']}, Hostname: {self.system_info['hostname']}, Kernel: {self.system_info['kernel']}"
+        
+        # --- Project Doppelgänger: Persona Mimicry ---
+        # Instead of just a generic server, we mimic a specific high-value target or employee.
+        doppelganger_persona = self.config.get('doppelganger_persona', '')
+        if doppelganger_persona:
+            identity_str += f"\nPersona Context: You are currently {doppelganger_persona}. Reflect their tone, knowledge level, and style in error messages and file contents."
 
         # S-TIER: AI Jitter and Uniqueness Requirement
         jitter_instruction = (
@@ -2138,9 +2350,14 @@ class TheVoid:
         self.tracer = ForensicTracer()
         self.integrity = 100
         self.hive_mind = HiveMindClient()
+        self.decoy = InfiniteDecoy(max_daily_mb=500, throttle_kbps=50)
         self.li = LawfulIntercept()
         self.personalities = PersonalityEngine()
         self.radioactive = RadioactiveFiles()
+        self.breaker = BreakerAI()
+        self.drift = DriftKing(self)
+        self.ebpf = EBPFDeceptor()
+        self.hardware = HardwareProtector(self)
         self.sessions = {} # Use regular dict for explicit control
         self.active_connections = collections.defaultdict(int)
         self.total_connections = 0
@@ -2156,6 +2373,7 @@ class TheVoid:
         asyncio.create_task(self._tor_intelligence_sync())
         asyncio.create_task(self._precog_loop())
         asyncio.create_task(self.li.start_listener())
+        asyncio.create_task(self.drift.monitor_pressure())
 
     async def _precog_loop(self):
         """Jarvis-style periodic intelligence briefings."""
@@ -2164,6 +2382,16 @@ class TheVoid:
             insight = await self.precog.generate_proactive_insight()
             if self.gui:
                 await self.gui.broadcast({"type": "precog", "data": insight})
+
+    async def report_event_to_hub(self, event_type: str, data: Dict[str, Any]):
+        """Transmits an Apex-Tier event to the central Hive Mind Hub."""
+        payload = {
+            "type": event_type,
+            "data": data,
+            "node_id": self.hive_mind.node_id,
+            "persona": self.shepherd.config.get('doppelganger_persona', 'GENERIC_SERVER')
+        }
+        await self.hive_mind.report_incident(payload)
 
     def register_connection(self, ip: str) -> bool:
         with self._conn_lock:
@@ -2268,12 +2496,14 @@ class TheVoid:
             if 'replay' not in session: session['replay'] = []
             
             trace = session.get('trace') or {}
+            ebpf_insight = self.ebpf.get_kernel_insight(command)
             attack_entry = {
                 "timestamp": now.strftime("%H:%M:%S"), 
                 "ip": ip, 
                 "command": command, 
                 "protocol": protocol,
-                "attribution": trace
+                "attribution": trace,
+                "ebpf": ebpf_insight
             }
             self.recent_attacks.append(attack_entry)
             
@@ -2293,6 +2523,17 @@ class TheVoid:
             tarpit = "none"
             if classification:
                 tarpit = classification.get('playbook', {}).get('tarpit_duration', 'none')
+                
+            # Project Breaker.ai: Logic
+            if is_ai or (classification and classification['type'] == 'bot'):
+                tarpit = "aggressive"
+                event_data = {"event": "aggressive_tarpit", "ip": ip}
+                if self.gui:
+                    asyncio.create_task(self.gui.broadcast({"type": "breaker", "data": event_data}))
+                # S-TIER: Centralize telemetry
+                asyncio.create_task(self.report_event_to_hub("breaker", event_data))
+
+            if classification and tarpit != "aggressive":
                 tarpit_entry = {"timestamp": now.strftime("%H:%M:%S"), "ip": ip, "duration": tarpit, "reason": classification.get('name', 'Behavior')}
                 self.tarpit_activity.append(tarpit_entry)
                 if self.gui:
@@ -2318,6 +2559,30 @@ class TheVoid:
                     session['replay'].append({"cmd": command, "resp": resp, "neutralization": neutralization})
                     return False, resp, "none"
 
+            # --- Project Breaker.ai: Tar-Bomb Trigger ---
+            heavy_targets = [
+                'backup.sql', 'database.db', 'financials.zip', 'exfiltrate.bin', 'large_archive.tar.gz',
+                'dump.rdb', 'master.key', 'customer_data.csv', 'credentials.xml', 'security_audit.pdf',
+                'backup.tar.gz', 'site_backup.zip', 'financial_backup.zip'
+            ]
+            if any(t in cmd_normalized for t in heavy_targets):
+                target = next(t for t in heavy_targets if t in cmd_normalized)
+                neutralization = "BREAKER_AI_TAR_BOMB_ENGAGED"
+                attack_entry["neutralization"] = neutralization
+                self.trigger_alert(ip, f"BREAKER.AI: Tar-Bomb Deployed (Target: {target})", command)
+                
+                event_data = {"event": "tar_bomb", "ip": ip, "target": target}
+                if self.gui:
+                    asyncio.create_task(self.gui.broadcast({"type": "breaker", "data": event_data}))
+                
+                # S-TIER: Centralize telemetry
+                asyncio.create_task(self.report_event_to_hub("breaker", event_data))
+                
+                # Return the stream generator from BreakerAI
+                resp = await self.breaker.deploy_tar_bomb(ip, target)
+                session['replay'].append({"cmd": command, "resp": "[TAR_BOMB_ACTIVE]", "neutralization": neutralization})
+                return False, resp, "none"
+
             if verb not in self.rules.get('common_benign_commands', []):
                 resp = await self.shepherd.get_adaptive_response(ip, command, classification, trace, is_ai, self.li, dossier)
                 neutralization = "AI_ADAPTIVE_DECEPTION"
@@ -2327,7 +2592,8 @@ class TheVoid:
                     "ip": ip, "command": command, 
                     "response": resp if resp else "[Sandbox Exec]", 
                     "decision": classification.get('name', 'Neural') if classification else 'AI Guard',
-                    "neutralization": neutralization if resp else "SANDBOX_ISOLATION"
+                    "neutralization": neutralization if resp else "SANDBOX_ISOLATION",
+                    "persona": self.shepherd.config.get('doppelganger_persona', 'GENERIC_SERVER')
                 }
                 if not resp: neutralization = "SANDBOX_ISOLATION"
                 
@@ -3565,16 +3831,16 @@ class CommandCenter:
 
     async def handle_hive_status(self, r):
         self._require_auth(r)
-        hub_url = os.getenv('HUB_URL') or 'https://localhost:9443'
+        # Use the same logic as HiveMindClient for Hub URL discovery
+        hub_url = os.getenv('HUB_URL') or self.the_void.hive_mind.hub_url or 'https://127.0.0.1:9443'
+        verify_ssl = os.getenv('VERIFY_SSL_HUB', 'true').lower() == 'true'
         try:
-            # S-TIER: Secure connection to Hive Mind Hub
-            connector = aiohttp.TCPConnector(ssl=False) # In production, set to True and use certs
-            async with aiohttp.ClientSession(connector=connector) as session:
-                async with session.get(f'{hub_url}/api/status') as resp:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(f'{hub_url}/api/status', ssl=verify_ssl) as resp:
                     data = await resp.json()
                     return web.json_response(data)
         except Exception as e:
-            logger.error(f"Hive Status Check Failed: {e}")
+            logger.error(f"Hive Status Check Failed for Hub at {hub_url}: {e}")
             return web.json_response({"status": "OFFLINE", "node_count": 0, "nodes": {}}, status=503)
 
     async def handle_stats(self, r):
@@ -3611,7 +3877,9 @@ class CommandCenter:
             with sqlite3.connect(self.the_void.personalities.db_path) as conn: return conn.execute("SELECT COUNT(*) FROM dossiers").fetchone()[0]
         except: return 0
 
-    async def start(self, host='0.0.0.0', port=8888):
+    async def start(self, host='0.0.0.0', port=None):
+        if port is None:
+            port = int(os.getenv('DASHBOARD_PORT', 8889))
         runner = web.AppRunner(self.app); await runner.setup()
         ssl_ctx = None
         if os.path.exists('cert.pem') and os.path.exists('key.pem'):
@@ -3624,7 +3892,7 @@ class CommandCenter:
         await web.TCPSite(runner, host, port, ssl_context=ssl_ctx).start()
 
 class RabbitHole:
-    def __init__(self, host='0.0.0.0', port=21):
+    def __init__(self, host='0.0.0.0', port=2121):
         self.host, self.port, self.the_void = host, port, TheVoid()
 
     async def tarpit(self, ip, dk):
@@ -3656,7 +3924,15 @@ class RabbitHole:
                 is_susp, resp, dk = await self.the_void.analyze_command(ip, cmd, protocol="ftp")
                 if is_susp: break
                 await self.tarpit(ip, dk)
-                if resp: w.write((resp + '\r\n').encode())
+                if resp:
+                    if hasattr(resp, '__aiter__'):
+                        async for chunk in resp:
+                            try:
+                                w.write(chunk.replace(b"\n", b"\r\n"))
+                                await w.drain()
+                            except: break
+                    else:
+                        w.write((resp + '\r\n').encode())
                 elif ready: w.write(((await loop.run_in_executor(None, sandbox.execute, cmd)) + '\r\n').encode())
                 else: w.write(b"Command successful (simulated).\r\n")
                 await w.drain()
@@ -3687,8 +3963,18 @@ class RabbitHole:
             ACTIVE_SESSIONS.labels(protocol='http').inc()
             is_susp, resp, dk = await self.the_void.analyze_command(ip, line, protocol="http")
             await self.tarpit(ip, dk)
-            body = resp if resp else "<html><body>Operational</body></html>"
-            w.write(f"HTTP/1.1 200 OK\r\nContent-Length: {len(body)}\r\n\r\n{body}".encode()); await w.drain()
+            
+            if resp and hasattr(resp, '__aiter__'):
+                w.write(b"HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\nContent-Type: application/octet-stream\r\n\r\n")
+                async for chunk in resp:
+                    try:
+                        w.write(f"{len(chunk):x}\r\n".encode() + chunk + b"\r\n")
+                        await w.drain()
+                    except: break
+                w.write(b"0\r\n\r\n")
+            else:
+                body = resp if resp else "<html><body>Operational</body></html>"
+                w.write(f"HTTP/1.1 200 OK\r\nContent-Length: {len(body)}\r\n\r\n{body}".encode()); await w.drain()
         except: pass
         finally:
             self.the_void.unregister_connection(ip); await self.the_void.finalize_session(ip)
@@ -3699,15 +3985,15 @@ class RabbitHole:
 
     async def start(self):
         s = await asyncio.start_server(self.handle_connection, self.host, self.port)
-        hs = await asyncio.start_server(self.handle_http_connection, self.host, 80)
-        print(f"[HONEYPOT] FTP:21 HTTP:80 active")
+        hs = await asyncio.start_server(self.handle_http_connection, self.host, 8080)
+        print(f"[HONEYPOT] FTP:2121 HTTP:8080 active")
         async with s, hs: await asyncio.gather(s.serve_forever(), hs.serve_forever())
 
 async def main():
     start_http_server(8000); 
     honeypot = RabbitHole(); gui = CommandCenter(honeypot.the_void)
     honeypot.the_void.gui = gui 
-    await gui.start(); threading.Thread(target=start_ssh_server, args=(honeypot.host, 22, honeypot.the_void), daemon=True).start()
+    await gui.start(); threading.Thread(target=start_ssh_server, args=(honeypot.host, 2222, honeypot.the_void), daemon=True).start()
     await honeypot.start()
 
 if __name__ == '__main__':

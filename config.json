@@ -13,12 +13,16 @@
     },
     "ai_integration": {
         "enabled": true,
-        "api_key": "AIzaSyBPMpCYyuErIOZxeoSkGjyyHx-1dzDUJQs",
-        "model": "gemini-2.0-flash-lite"
+        "provider": "gemini",
+        "api_key": "YOUR_GEMINI_API_KEY",
+        "xai_api_key": "YOUR_XAI_API_KEY",
+        "model": "gemini-2.0-flash-lite",
+        "xai_model": "grok-2",
+        "doppelganger_persona": "Staging server for Google Cloud's internal IAM identity management API and zero-trust proxy infrastructure. Contains highly sensitive routing configurations and experimental authentication binaries."
     },
     "hive_mind": {
         "enabled": true,
-        "hub_url": "https://localhost:9443",
+        "hub_url": "https://127.0.0.1:9443",
         "auth_token": "6d3574ff21cc17ab6b00405020f2a277"
     }
 }

@@ -6,10 +6,6 @@ def fuzz_port(port, name):
     print(f"Fuzzing {name} on port {port}...")
     try:
         # 1. Binary Blob Blast
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.settimeout(2)
-        s.connect(('127.0.0.1', port))
-        s.recv(1024) # banner
         
         payloads = [
             b'\xff\xfe\xfd\xfc' * 100, # High entropy binary
@@ -21,13 +17,16 @@ def fuzz_port(port, name):
         
         for p in payloads:
             print(f"  Sending payload: {p[:20]}...")
-            s.send(p)
             try:
+                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                s.settimeout(2)
+                s.connect(('127.0.0.1', port))
                 s.recv(1024)
+                s.send(p)
+                s.recv(1024)
+                s.close()
             except: pass
             time.sleep(0.1)
-            
-        s.close()
         print(f"  {name} survived.")
         return True
     except Exception as e:

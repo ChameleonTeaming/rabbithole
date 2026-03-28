@@ -5,7 +5,7 @@
 
 set -e
 
-PROJECT_ID=$(gcloud config get-value project)
+PROJECT_ID=$(/home/ghostcodelogik13/google-cloud-sdk/bin/gcloud config get-value project)
 ZONE="us-central1-a"
 INSTANCE_NAME="rabbithole-v3"
 MACHINE_TYPE="e2-micro"
@@ -19,15 +19,15 @@ echo "=================================================="
 
 # 1. Enable Compute Engine API
 echo "[*] Enabling Compute Engine API..."
-gcloud services enable compute.googleapis.com
+/home/ghostcodelogik13/google-cloud-sdk/bin/gcloud services enable compute.googleapis.com
 
 # 2. Configure Firewall Rules
 echo "[*] Creating Firewall Rules..."
 # Allow Honeypot Ports (21, 22, 80)
-if ! gcloud compute firewall-rules describe rabbithole-allow-traps &>/dev/null;
+if ! /home/ghostcodelogik13/google-cloud-sdk/bin/gcloud compute firewall-rules describe rabbithole-allow-traps &>/dev/null;
 then
-    gcloud compute firewall-rules create rabbithole-allow-traps \
-        --allow tcp:21,tcp:22,tcp:80 \
+    /home/ghostcodelogik13/google-cloud-sdk/bin/gcloud compute firewall-rules create rabbithole-allow-traps \
+        --allow tcp:21,tcp:22,tcp:80,tcp:2222 \
         --target-tags=rabbithole-node \
         --description="Allow external traffic to Honeypot traps"
     echo "    -> Firewall rule 'rabbithole-allow-traps' created."
@@ -36,10 +36,10 @@ else
 fi
 
 # 3. Create VM Instance
-if ! gcloud compute instances describe $INSTANCE_NAME --zone=$ZONE &>/dev/null;
+if ! /home/ghostcodelogik13/google-cloud-sdk/bin/gcloud compute instances describe $INSTANCE_NAME --zone=$ZONE &>/dev/null;
 then
     echo "[*] Creating VM Instance ($INSTANCE_NAME)..."
-    gcloud compute instances create $INSTANCE_NAME \
+    /home/ghostcodelogik13/google-cloud-sdk/bin/gcloud compute instances create $INSTANCE_NAME \
         --project=$PROJECT_ID \
         --zone=$ZONE \
         --machine-type=$MACHINE_TYPE \
@@ -58,28 +58,57 @@ fi
 echo "[*] Waiting for VM to initialize (30s)..."
 sleep 30
 
-# 5. Upload Project Files
-echo "[*] Uploading RabbitHole codebase..."
-# Zip current directory to transfer efficiently
+# 5. Upload Project Files (Strict Allow-list for RabbitHole Core Only)
+echo "[*] Packaging RabbitHole Core (Excluding Android/Mobile artifacts)..."
+DIR_NAME=$(basename "$PWD")
 cd ..
-zip -r rabbithole_deploy.zip gemini-cli/ -x "*.git*" "gemini-cli/venv/*" "gemini-cli/__pycache__/*"
-gcloud compute scp rabbithole_deploy.zip $INSTANCE_NAME:~/ --zone=$ZONE
-rm rabbithole_deploy.zip
-cd gemini-cli
+# Strictly include honeypot files, ignore platform-tools, pmos, pmbootstrap, etc.
+zip -r /tmp/rabbithole_deploy.zip "$DIR_NAME/" \
+    -i "$DIR_NAME/*.py" \
+    "$DIR_NAME/*.json" \
+    "$DIR_NAME/*.yml" \
+    "$DIR_NAME/*.sh" \
+    "$DIR_NAME/*.pem" \
+    "$DIR_NAME/*.db" \
+    "$DIR_NAME/*.txt" \
+    "$DIR_NAME/core/*" \
+    "$DIR_NAME/Dockerfile*" \
+    "$DIR_NAME/.env" \
+    "$DIR_NAME/.dockerignore" \
+    -x "$DIR_NAME/platform-tools/*" \
+    "$DIR_NAME/pmos/*" \
+    "$DIR_NAME/pmbootstrap/*" \
+    "$DIR_NAME/venv/*" \
+    "$DIR_NAME/__pycache__/*" \
+    "$DIR_NAME/angler-*" \
+    "$DIR_NAME/android-info.txt"
+/home/ghostcodelogik13/google-cloud-sdk/bin/gcloud compute scp /tmp/rabbithole_deploy.zip $INSTANCE_NAME:~/ --zone=$ZONE
+rm /tmp/rabbithole_deploy.zip
+cd "$DIR_NAME"
 
 # 6. Execute Installer Remotely
 echo "[*] executing Remote Installer..."
-gcloud compute ssh $INSTANCE_NAME --zone=$ZONE --command="
-    sudo apt-get update && sudo apt-get install -y unzip
-    unzip -o rabbithole_deploy.zip
-    cd gemini-cli
+/home/ghostcodelogik13/google-cloud-sdk/bin/gcloud compute ssh $INSTANCE_NAME --zone=$ZONE --command="
+    sudo apt-get update && sudo apt-get install -y unzip psmisc
+    curl -sSO https://dl.google.com/cloudagents/add-google-cloud-ops-agent-repo.sh
+    sudo bash add-google-cloud-ops-agent-repo.sh --also-install
+    unzip -o ~/rabbithole_deploy.zip
+    cd \"$DIR_NAME\"
+    
+    # Force kill anything holding onto the honeypot ports (21, 80, 2222)
+    echo \"[*] Clearing port conflicts...\"
+    sudo fuser -k 21/tcp 80/tcp 2222/tcp || true
+    
+    # Ensure containers are completely stopped and removed before rebuilding
+    sudo docker compose down --remove-orphans || true
+    
     chmod +x install_gcp.sh
     # Run the installer non-interactively
     sudo ./install_gcp.sh
 "
 
 # 7. Get External IP
-EXTERNAL_IP=$(gcloud compute instances describe $INSTANCE_NAME --zone=$ZONE --format='get(networkInterfaces[0].accessConfigs[0].natIP)')
+EXTERNAL_IP=$(/home/ghostcodelogik13/google-cloud-sdk/bin/gcloud compute instances describe $INSTANCE_NAME --zone=$ZONE --format='get(networkInterfaces[0].accessConfigs[0].natIP)')
 
 echo "=================================================="
 echo "   DEPLOYMENT SUCCESSFUL                          "
@@ -88,7 +117,7 @@ echo "Your RabbitHole is LIVE at: $EXTERNAL_IP"
 echo ""
 echo "ACCESS INSTRUCTIONS:"
 echo "1. To access the Secure Dashboard, run this command on YOUR LAPTOP:"
-echo "   gcloud compute ssh $INSTANCE_NAME --zone=$ZONE -- -L 8888:127.0.0.1:8888 -L 9443:127.0.0.1:9443"
+echo "   /home/ghostcodelogik13/google-cloud-sdk/bin/gcloud compute ssh $INSTANCE_NAME --zone=$ZONE -- -L 8888:127.0.0.1:8888 -L 9443:127.0.0.1:9443"
 echo ""
 echo "2. Open your browser to: https://localhost:8888"
 echo "3. Login: admin / <Your .env Password>"

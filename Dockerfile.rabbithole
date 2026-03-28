@@ -2,6 +2,9 @@ FROM python:3.9-slim
 
 WORKDIR /app
 
+# Enable unbuffered logging
+ENV PYTHONUNBUFFERED=1
+
 # Install system dependencies for crypto/net
 RUN apt-get update && apt-get install -y \
     gcc \
@@ -11,16 +14,24 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Create a non-root user for security
+RUN groupadd -g 10001 rabbithole && \
+    useradd -u 10001 -g rabbithole -s /bin/bash -m rabbithole
+
 COPY rabbithole.py .
+COPY simulate_global_traffic.py .
+COPY core/ ./core/
 COPY config.json .
 COPY narratives.json .
 COPY system_info.json .
 COPY cert.pem .
 COPY key.pem .
-COPY host.key .
 
-# Create quarantine dir
-RUN mkdir -p quarantine logs
+# Create quarantine and logs dirs and set permissions
+RUN mkdir -p quarantine logs && \
+    chown -R rabbithole:rabbithole /app
+
+USER rabbithole
 
 CMD ["python", "rabbithole.py"]
 

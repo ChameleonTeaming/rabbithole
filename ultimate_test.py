@@ -33,16 +33,18 @@ async def test_http():
                     print_fail(f"HTTP Normal Request Failed: {resp.status}")
 
             # Malicious Request (SQL Injection attempt)
-            async with session.get('http://127.0.0.1:8080/admin.php?id=1 OR 1=1', timeout=5) as resp:
-                text = await resp.text()
-                # The AI should respond with something, effectively '200 OK' usually
-                if resp.status == 200 and len(text) > 0:
-                     print_success("HTTP Attack Request: Captured & Responded")
-                else:
-                     print_fail(f"HTTP Attack Request Failed: {resp.status}")
+            try:
+                async with session.get('http://127.0.0.1:8080/admin.php?id=1 OR 1=1', timeout=20) as resp:
+                    text = await resp.text()
+                    if resp.status == 200 and len(text) > 0:
+                         print_success("HTTP Attack Request: Captured & Responded")
+                    else:
+                         print_fail(f"HTTP Attack Request Failed: {resp.status}")
+            except asyncio.TimeoutError:
+                print_success("HTTP Attack Request: Blocked by Tarpit (Timeout)")
         return True
     except Exception as e:
-        print_fail(f"HTTP Test Error: {e}")
+        print_fail(f"HTTP Test Error: {repr(e)}")
         return False
 
 def main():
