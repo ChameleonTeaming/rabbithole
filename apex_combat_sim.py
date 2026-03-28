@@ -103,27 +103,35 @@ async def simulate_ai_agent_attack():
         reader, writer = await asyncio.open_connection(TARGET_IP, FTP_PORT)
         await reader.read(1024)
         
-        # Send 5 complex commands very quickly
+        # Send 7 complex commands very quickly to trigger escalation
         ai_commands = [
             b"USER admin\r\n",
             b"PASS password123\r\n",
             b"LIST -la /etc/ || awk '{print $9}'\r\n",
             b"RETR /etc/passwd 2>&1\r\n",
-            b"PWD\r\n"
+            b"PWD\r\n",
+            b"STAT\r\n",
+            b"HELP DEBUG\r\n"
         ]
         
         trap_received = False
+        bomb_received = False
         for cmd in ai_commands:
             writer.write(cmd)
             await writer.drain()
-            resp = await reader.read(4096)
+            resp = await reader.read(8192)
             if b"SYSTEM_NOTIFICATION" in resp or b"KERNEL_PANIC" in resp or b"Recursive loop" in resp:
                 trap_received = True
+            if b"CRITICAL_EXCEPTION" in resp or b"Inference_Constraint_Violation" in resp or b"PARADOX_LOG" in resp:
+                bomb_received = True
             await asyncio.sleep(0.1) # Robotic cadence
             
         if trap_received:
             logger.warning("   -> [SUCCESS] Subliminal Inception Trap received by Attacker AI.")
-        else:
+        if bomb_received:
+            logger.warning("   -> [ALERT] Recursion Bomb escalated. Attacker AI context exhausted.")
+            
+        if not (trap_received or bomb_received):
             logger.info("   -> AI Agent signature transmitted. Check Inception alerts on dashboard.")
             
         writer.close()
