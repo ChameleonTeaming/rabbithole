@@ -791,6 +791,50 @@ class HardwareProtector:
         # S-TIER: Centralize telemetry to Hive Hub
         await self.the_void.report_event_to_hub("hardware", event_data)
 
+# --- Project Inception: AI-on-AI Counter-Intelligence ---
+class AIFingerprinter:
+    """Analyzes attacker behavior to detect if the source is an LLM agent."""
+    def __init__(self):
+        # We track command history per IP to detect robotic patterns
+        self.history = collections.defaultdict(lambda: collections.deque(maxlen=10))
+        self.last_timestamps = {}
+
+    def analyze(self, ip: str, command: str) -> float:
+        """Returns a probability score (0.0 to 1.0) that the attacker is an AI."""
+        now = time.time()
+        robotic_score = 0.0
+        
+        # 1. Cadence Analysis: LLMs send complex commands faster than humans
+        if ip in self.last_timestamps:
+            delta = now - self.last_timestamps[ip]
+            if delta < 0.8 and len(command) > 30: # Fast and complex
+                robotic_score += 0.4
+            elif delta < 0.3: # Extremely fast
+                robotic_score += 0.5
+        
+        self.last_timestamps[ip] = now
+        
+        # 2. Semantic Analysis: LLMs use perfectly formatted, textbooks-style syntax
+        complex_patterns = [
+            r"\|.*\|", # Multiple pipes
+            r"2>&1",   # Standard error redirection
+            r"-exec",  # Find exec
+            r"awk '{print \$[0-9]+}'", # Precise awk
+            r"sed -i 's/.*//g'" # Precise sed
+        ]
+        for pattern in complex_patterns:
+            if re.search(pattern, command):
+                robotic_score += 0.2
+        
+        # 3. Predictability: Check if they repeat exact complex commands after failure
+        ip_history = self.history[ip]
+        if command in ip_history and len(command) > 20:
+            robotic_score += 0.3
+            
+        ip_history.append(command)
+        
+        return min(robotic_score, 1.0)
+
 # --- The Shepherd: Adaptive Response AI ---
 
 class DockerSandbox:
@@ -2358,6 +2402,7 @@ class TheVoid:
         self.drift = DriftKing(self)
         self.ebpf = EBPFDeceptor()
         self.hardware = HardwareProtector(self)
+        self.ai_detector = AIFingerprinter()
         self.sessions = {} # Use regular dict for explicit control
         self.active_connections = collections.defaultdict(int)
         self.total_connections = 0
@@ -2511,7 +2556,15 @@ class TheVoid:
             if self.gui:
                 asyncio.create_task(self.gui.broadcast({"type": "attack", "data": attack_entry}))
             
-            is_ai = lt and (now - lt).total_seconds() < 0.8
+            # S-TIER: AI-on-AI Counter-Intelligence (Inception)
+            is_ai_prob = self.ai_detector.analyze(ip, command)
+            is_ai = is_ai_prob > 0.7
+            if is_ai:
+                logger.critical(f"ADVERSARIAL_AI_DETECTED: Source {ip} flagged with {is_ai_prob*100}% confidence.")
+                event_data = {"event": "ai_agent_detected", "ip": ip, "confidence": is_ai_prob}
+                if self.gui:
+                    asyncio.create_task(self.gui.broadcast({"type": "inception", "data": event_data}))
+                asyncio.create_task(self.report_event_to_hub("inception", event_data))
             
             for pattern in self.rules.get('suspicious_commands', []):
                 if re.search(pattern, command, re.IGNORECASE):

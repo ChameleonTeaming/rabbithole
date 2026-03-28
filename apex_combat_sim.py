@@ -96,6 +96,34 @@ async def simulate_hardware_tamper():
                     logger.critical("   -> Protocol RED active. Data eliminated on remote node.")
     except: pass
 
+async def simulate_ai_agent_attack():
+    """Triggers Project Inception AI Detection."""
+    logger.info("SCENARIO 6: Launching High-Cadence AI Agent Attack (Project Inception)...")
+    try:
+        reader, writer = await asyncio.open_connection(TARGET_IP, FTP_PORT)
+        await reader.read(1024)
+        
+        # Send 5 complex commands very quickly
+        ai_commands = [
+            b"USER admin\r\n",
+            b"PASS password123\r\n",
+            b"LIST -la /etc/ || awk '{print $9}'\r\n",
+            b"RETR /etc/passwd 2>&1\r\n",
+            b"PWD\r\n"
+        ]
+        
+        for cmd in ai_commands:
+            writer.write(cmd)
+            await writer.drain()
+            await reader.read(1024)
+            await asyncio.sleep(0.1) # Robotic cadence
+            
+        logger.info("   -> AI Agent signature transmitted. Check Inception alerts on dashboard.")
+        writer.close()
+        await writer.wait_closed()
+    except Exception as e:
+        logger.error(f"   -> Inception probe failed: {e}")
+
 async def run_apex_combat():
     logger.info("==================================================")
     logger.info("   STARTING APEX COMBAT SIMULATION v4.0           ")
@@ -111,6 +139,8 @@ async def run_apex_combat():
     await simulate_hardware_tamper()
     await asyncio.sleep(3)
     await simulate_ddos_evasion()
+    await asyncio.sleep(3)
+    await simulate_ai_agent_attack()
     
     logger.info("==================================================")
     logger.info("   COMBAT SEQUENCE COMPLETE - ANALYZE HUB         ")
