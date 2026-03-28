@@ -1,8 +1,8 @@
 {
     "email_alerts": {
         "enabled": true,
-        "sender_email": "suadaabdulahad@gmail.com",
-        "recipient_email": "illuminatislogik@outlook.com",
+        "sender_email": "YOUR_SENDER_EMAIL@gmail.com",
+        "recipient_email": "YOUR_RECIPIENT_EMAIL@outlook.com",
         "smtp_server": "smtp.gmail.com",
         "smtp_port": 587,
         "use_tls": true
@@ -23,6 +23,6 @@
     "hive_mind": {
         "enabled": true,
         "hub_url": "https://127.0.0.1:9443",
-        "auth_token": "6d3574ff21cc17ab6b00405020f2a277"
+        "auth_token": "YOUR_HIVE_MIND_TOKEN"
     }
 }

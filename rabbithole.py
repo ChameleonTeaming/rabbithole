@@ -2653,10 +2653,17 @@ class TheVoid:
         try:
             with open('config.json', 'r') as f: cfg = json.load(f).get('email_alerts', {})
             if not cfg.get('enabled'): return
+            
+            sender = os.getenv('ALERT_SENDER') or cfg.get('sender_email')
+            recipient = os.getenv('ALERT_RECIPIENT') or cfg.get('recipient_email')
+            
+            if not sender or not recipient:
+                return
+
             msg = f"Subject: Alert: {alert['ip']}\n\nEvent: {alert['event']}\nReason: {alert['reason']}\nCmd: {alert['command']}"
             s = smtplib.SMTP(cfg['smtp_server'], cfg['smtp_port'])
             if cfg.get('use_tls'): s.starttls()
-            s.sendmail(cfg['sender_email'], cfg['recipient_email'], msg); s.quit()
+            s.sendmail(sender, recipient, msg); s.quit()
         except: pass
 
     def block_ip(self, ip: str) -> None:
