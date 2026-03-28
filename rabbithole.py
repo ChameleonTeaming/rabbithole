@@ -521,9 +521,15 @@ audit_logger.addFilter(PIIRedactionFilter())
 
 for l in [logger, audit_logger]:
     if not l.handlers:
-        h = logging.StreamHandler()
-        h.setFormatter(JsonFormatter())
-        l.addHandler(h)
+        # Console output
+        sh = logging.StreamHandler()
+        sh.setFormatter(JsonFormatter())
+        l.addHandler(sh)
+        
+        # S-TIER: File-based persistence for ArchiveEngine
+        fh = logging.FileHandler("rabbithole.log")
+        fh.setFormatter(JsonFormatter())
+        l.addHandler(fh)
 
 # --- The Simulacrum: Payload Detonation Sandbox ---
 class Simulacrum:
@@ -834,6 +840,54 @@ class AIFingerprinter:
         ip_history.append(command)
         
         return min(robotic_score, 1.0)
+
+import gzip
+import shutil
+
+class ArchiveEngine:
+    """S-TIER: Handles automated log rotation and GZIP compression for long-term forensics."""
+    def __init__(self, log_file: str = "rabbithole.log", archive_dir: str = "archives", max_size_mb: int = 50):
+        self.log_file = log_file
+        self.archive_dir = archive_dir
+        self.max_size_bytes = max_size_mb * 1024 * 1024
+        if not os.path.exists(self.archive_dir):
+            os.makedirs(self.archive_dir)
+
+    async def monitor_loop(self):
+        """Background task that monitors log size and compresses on threshold."""
+        while True:
+            await asyncio.sleep(300) # Check every 5 minutes
+            if os.path.exists(self.log_file) and os.path.getsize(self.log_file) > self.max_size_bytes:
+                self.rotate_and_compress()
+
+    def rotate_and_compress(self):
+        """Rotates the log file and compresses it into an archive."""
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        archive_name = f"rabbithole_{timestamp}.log"
+        archive_path = os.path.join(self.archive_dir, archive_name)
+        compressed_path = archive_path + ".gz"
+
+        try:
+            # S-TIER: Atomic rotation to prevent log loss
+            shutil.move(self.log_file, archive_path)
+            
+            # Compress using high-level GZIP
+            with open(archive_path, 'rb') as f_in:
+                with gzip.open(compressed_path, 'wb') as f_out:
+                    shutil.copyfileobj(f_in, f_out)
+            
+            # S-TIER: Generate Integrity Hash for the archive
+            sha256_hash = hashlib.sha256()
+            with open(compressed_path, "rb") as f:
+                for byte_block in iter(lambda: f.read(4096), b""):
+                    sha256_hash.update(byte_block)
+            integrity_hash = sha256_hash.hexdigest()
+
+            # Remove the uncompressed temporary file
+            os.remove(archive_path)
+            logger.info(f"Log Rotation Complete: Archived to {compressed_path}. Integrity Hash: {integrity_hash}")
+        except Exception as e:
+            logger.error(f"ArchiveEngine Failure: {e}")
 
 class InceptionTrap:
     """Generates subliminal prompt injection payloads to neutralize adversarial AIs."""
@@ -2478,6 +2532,7 @@ class TheVoid:
         self.inception = InceptionTrap()
         self.bomber = RecursionBomb()
         self.siem = AegisLink()
+        self.archiver = ArchiveEngine()
         self.sessions = {} # Use regular dict for explicit control
         self.active_connections = collections.defaultdict(int)
         self.total_connections = 0
@@ -2494,6 +2549,7 @@ class TheVoid:
         asyncio.create_task(self._precog_loop())
         asyncio.create_task(self.li.start_listener())
         asyncio.create_task(self.drift.monitor_pressure())
+        asyncio.create_task(self.archiver.monitor_loop())
 
     async def _precog_loop(self):
         """Jarvis-style periodic intelligence briefings."""
