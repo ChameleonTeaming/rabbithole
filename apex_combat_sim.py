@@ -112,13 +112,20 @@ async def simulate_ai_agent_attack():
             b"PWD\r\n"
         ]
         
+        trap_received = False
         for cmd in ai_commands:
             writer.write(cmd)
             await writer.drain()
-            await reader.read(1024)
+            resp = await reader.read(4096)
+            if b"SYSTEM_NOTIFICATION" in resp or b"KERNEL_PANIC" in resp or b"Recursive loop" in resp:
+                trap_received = True
             await asyncio.sleep(0.1) # Robotic cadence
             
-        logger.info("   -> AI Agent signature transmitted. Check Inception alerts on dashboard.")
+        if trap_received:
+            logger.warning("   -> [SUCCESS] Subliminal Inception Trap received by Attacker AI.")
+        else:
+            logger.info("   -> AI Agent signature transmitted. Check Inception alerts on dashboard.")
+            
         writer.close()
         await writer.wait_closed()
     except Exception as e:
