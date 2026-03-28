@@ -863,6 +863,50 @@ class RecursionBomb:
         """Returns a high-token 'Recursion Bomb'."""
         return random.choice(self.bombs)
 
+# --- AegisLink: Enterprise SIEM Bridge ---
+class AegisLink:
+    """Universal adapter for forwarding high-fidelity telemetry to SIEM/Splunk."""
+    def __init__(self, config_file: str = 'config.json'):
+        self.config = self._load_config(config_file).get('siem_integration', {})
+        self.enabled = self.config.get('enabled', False)
+        self.host = self.config.get('receiver_host', '127.0.0.1')
+        self.port = self.config.get('receiver_port', 514)
+        self.last_export = None
+        self.export_count = 0
+
+    def _load_config(self, config_file):
+        try:
+            with open(config_file, 'r') as f: return json.load(f)
+        except: return {}
+
+    def forward(self, event_type: str, data: Dict[str, Any]):
+        """Asynchronously forwards an event to the configured SIEM."""
+        if not self.enabled: return
+        
+        # S-TIER: Offload to background thread to ensure zero performance impact
+        threading.Thread(target=self._transmit, args=(event_type, data), daemon=True).start()
+
+    def _transmit(self, event_type: str, data: Dict[str, Any]):
+        try:
+            payload = {
+                "version": "3.2",
+                "sensor": socket.gethostname(),
+                "timestamp": datetime.datetime.now().isoformat(),
+                "event_type": event_type,
+                "payload": data
+            }
+            message = json.dumps(payload).encode('utf-8')
+            
+            # Use UDP for high-speed, non-blocking telemetry
+            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            sock.sendto(message, (self.host, self.port))
+            sock.close()
+            
+            self.last_export = datetime.datetime.now()
+            self.export_count += 1
+        except Exception as e:
+            logger.error(f"AegisLink: SIEM transmission failed: {e}")
+
 # --- The Shepherd: Adaptive Response AI ---
 
 class DockerSandbox:
@@ -2433,6 +2477,7 @@ class TheVoid:
         self.ai_detector = AIFingerprinter()
         self.inception = InceptionTrap()
         self.bomber = RecursionBomb()
+        self.siem = AegisLink()
         self.sessions = {} # Use regular dict for explicit control
         self.active_connections = collections.defaultdict(int)
         self.total_connections = 0
@@ -2714,6 +2759,10 @@ class TheVoid:
     async def finalize_session(self, ip: str) -> None:
         session = self.sessions.get(ip)
         if not session or not session['commands']: return
+        
+        # Forward session summary to SIEM before final removal
+        self.siem.forward("session_finalized", {"ip": ip, "summary": list(session.get('commands', []))})
+        
         report = await self.oracle.generate_report(ip, session['commands'], session['sandbox_reports'])
         rep_data = {"event": "oracle_report", "ip": ip, "report": report, "attribution": session['trace'], "forensic_signature": self.tracer.sign_entry(f"{ip}{report}"), "timestamp": datetime.datetime.now().isoformat()}
         self.recent_reports.append(rep_data)
@@ -2725,6 +2774,10 @@ class TheVoid:
     def trigger_alert(self, ip, reason, command):
         alert = {"event": "alert", "ip": ip, "reason": reason, "command": command}
         logger.error(f"Alert: {alert}")
+        
+        # Forward high-priority alert to SIEM
+        self.siem.forward("security_alert", alert)
+        
         with open(self.alert_file, 'a') as f: f.write(json.dumps(alert) + '\n')
         self._send_email_alert(alert)
         self._send_telegram_alert(alert)
@@ -2897,7 +2950,13 @@ class CommandCenter:
             <!-- HEADER -->
             <header class="flex justify-between items-end mb-6 select-none" style="transform: translateZ(20px);">
                 <div>
-                    <div class="text-[10px] text-zinc-500 tracking-[0.5em] mb-1">SYSTEM_ID: OMEGA_ZERO</div>
+                    <div class="flex gap-4 items-center mb-1">
+                        <div class="text-[10px] text-zinc-500 tracking-[0.5em]">SYSTEM_ID: OMEGA_ZERO</div>
+                        <div id="siem-uplink" class="flex items-center gap-1 opacity-40">
+                            <div class="w-1 h-1 rounded-full bg-zinc-500"></div>
+                            <span class="text-[8px] text-zinc-500 tracking-widest uppercase">SIEM_UPLINK: OFFLINE</span>
+                        </div>
+                    </div>
                     <h1 class="text-4xl font-bold neon-text">A.E.G.I.S. <span class="text-white opacity-50 font-thin">MK_II</span></h1>
                 </div>
                 <div class="flex gap-4 items-center">
@@ -3908,6 +3967,18 @@ class CommandCenter:
                         if(d.integrity < 50) int.className = "text-xl font-bold text-red-500";
                         else if(d.integrity < 80) int.className = "text-xl font-bold text-yellow-500";
                         else int.className = "text-xl font-bold text-cyan-400";
+
+                        // Update SIEM Uplink status
+                        const siem = document.getElementById('siem-uplink');
+                        if(d.siem_status && d.siem_status.enabled) {
+                            siem.className = "flex items-center gap-1 opacity-100";
+                            siem.innerHTML = `<div class="w-1 h-1 rounded-full bg-green-500 shadow-[0_0_5px_#00ff00]"></div>
+                                              <span class="text-[8px] text-green-500 tracking-widest uppercase font-bold">SIEM_UPLINK: ONLINE [${d.siem_status.export_count}]</span>`;
+                        } else {
+                            siem.className = "flex items-center gap-1 opacity-40";
+                            siem.innerHTML = `<div class="w-1 h-1 rounded-full bg-zinc-500"></div>
+                                              <span class="text-[8px] text-zinc-500 tracking-widest uppercase">SIEM_UPLINK: OFFLINE</span>`;
+                        }
                     } catch(e) {}
                 }
                 setInterval(updateIntegrity, 3000);
@@ -3971,7 +4042,13 @@ class CommandCenter:
             "dossier_count": self._get_dossier_count(),
             "de_anonymized": self.the_void.li.de_anonymized_ips,
             "ai_latency": self.the_void.get_ai_latency(),
-            "tenet_intel": self.the_void.precog.temporal_prediction
+            "tenet_intel": self.the_void.precog.temporal_prediction,
+            "siem_status": {
+                "enabled": self.the_void.siem.enabled,
+                "host": self.the_void.siem.host,
+                "last_export": self.the_void.siem.last_export.isoformat() if self.the_void.siem.last_export else "NEVER",
+                "export_count": self.the_void.siem.export_count
+            }
         })
 
     def _get_dossier_count(self):

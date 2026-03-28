@@ -24,5 +24,12 @@
         "enabled": true,
         "hub_url": "https://127.0.0.1:9443",
         "auth_token": "YOUR_HIVE_MIND_TOKEN"
+    },
+    "siem_integration": {
+        "enabled": false,
+        "receiver_host": "127.0.0.1",
+        "receiver_port": 514,
+        "protocol": "udp",
+        "format": "json"
     }
 }
