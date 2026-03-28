@@ -26,7 +26,7 @@
         "auth_token": "YOUR_HIVE_MIND_TOKEN"
     },
     "siem_integration": {
-        "enabled": false,
+        "enabled": true,
         "receiver_host": "127.0.0.1",
         "receiver_port": 514,
         "protocol": "udp",
